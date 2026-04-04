@@ -16,6 +16,42 @@ const installStampPath = path.join(runtimeStateRoot, 'requirements.sha256')
 
 let bootstrapPromise: Promise<void> | undefined
 
+const RUNTIME_PIP_ENV = {
+  ...process.env,
+  PIP_DISABLE_PIP_VERSION_CHECK: '1',
+  PIP_NO_INPUT: '1',
+  PYTHONDONTWRITEBYTECODE: '1',
+  PYTHONNOUSERSITE: '1',
+}
+
+function validatePinnedRequirements(requirements: string): void {
+  if (process.env.CLAUDE_CODE_ALLOW_UNPINNED_RUNTIME_REQUIREMENTS === '1') {
+    return
+  }
+
+  const unpinned = requirements
+    .split(/\r?\n/)
+    .map((line, index) => ({ line: line.trim(), index: index + 1 }))
+    .filter(
+      ({ line }) =>
+        line.length > 0 &&
+        !line.startsWith('#') &&
+        !line.startsWith('--') &&
+        !line.includes('=='),
+    )
+
+  if (unpinned.length === 0) {
+    return
+  }
+
+  const details = unpinned
+    .map(({ line, index }) => `${index}:${line}`)
+    .join(', ')
+  throw new Error(
+    `runtime requirements must be version-pinned with == (${details})`,
+  )
+}
+
 function pythonBinPath(): string {
   return path.join(venvRoot, 'bin', 'python3')
 }
@@ -29,8 +65,16 @@ async function pathExists(target: string): Promise<boolean> {
   }
 }
 
-async function runOrThrow(file: string, args: string[], label: string): Promise<string> {
-  const { code, stdout, stderr } = await execFileNoThrow(file, args, { useCwd: false })
+async function runOrThrow(
+  file: string,
+  args: string[],
+  label: string,
+  env?: NodeJS.ProcessEnv,
+): Promise<string> {
+  const { code, stdout, stderr } = await execFileNoThrow(file, args, {
+    useCwd: false,
+    env,
+  })
   if (code !== 0) {
     throw new Error(`${label} failed with code ${code}: ${stderr || stdout || 'unknown error'}`)
   }
@@ -53,6 +97,7 @@ export async function ensureBootstrapped(): Promise<void> {
     }
 
     const requirements = await readFile(requirementsPath, 'utf8')
+    validatePinnedRequirements(requirements)
     const digest = createHash('sha256').update(requirements).digest('hex')
     let installedDigest = ''
     try {
@@ -61,11 +106,20 @@ export async function ensureBootstrapped(): Promise<void> {
 
     if (installedDigest !== digest) {
       logForDebugging('installing python runtime dependencies', { level: 'debug' })
-      await runOrThrow(pythonBinPath(), ['-m', 'pip', 'install', '--upgrade', 'pip'], 'pip upgrade')
       await runOrThrow(
         pythonBinPath(),
-        ['-m', 'pip', 'install', '-r', requirementsPath],
+        [
+          '-m',
+          'pip',
+          'install',
+          '--require-virtualenv',
+          '--disable-pip-version-check',
+          '--no-input',
+          '-r',
+          requirementsPath,
+        ],
         'python dependency install',
+        RUNTIME_PIP_ENV,
       )
       await writeFile(installStampPath, `${digest}\n`, 'utf8')
     }
