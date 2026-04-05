@@ -9,7 +9,7 @@ assignees: ''
 ## ⚠️ 提交前确认  
 <!-- 请确认以下事项 -->  
 - [ ] 我已经仔细阅读了 [README 常见问题](https://github.com/NanmiCoder/cc-haha#常见问题) 部分
-- [ ] 我已经阅读了[第三方模型使用指南](https://github.com/NanmiCoder/cc-haha/blob/main/docs/third-party-models.md)
+- [ ] 我已经阅读了[第三方模型使用指南](https://github.com/NanmiCoder/cc-haha/blob/main/docs/guide/third-party-models.md)
 - [ ] 我已经搜索并查看了[已关闭的 issues](https://github.com/NanmiCoder/cc-haha/issues?q=is%3Aissue+is%3Aclosed)  
 
 ## ❓ 问题描述  
