@@ -1,6 +1,5 @@
 # Computer Use Guide
 
-<p align="right"><a href="./computer-use.md">中文</a> | <strong>English</strong></p>
 
 > **Modified Version**: This feature is a **heavily modified version** of the Computer Use (internal codename "Chicago") found in the leaked Claude Code source. The official implementation relies on Anthropic's private native modules (`@ant/computer-use-swift`, `@ant/computer-use-input`) that are not publicly available. We **replaced the entire underlying operation layer** with a Python bridge (`pyautogui` + `mss` + `pyobjc`), enabling anyone to run Computer Use on macOS.
 

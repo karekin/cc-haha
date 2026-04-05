@@ -1,6 +1,5 @@
 # Computer Use 功能指南
 
-<p align="right"><strong>中文</strong> | <a href="./computer-use.en.md">English</a></p>
 
 > **魔改说明**：本功能是基于 Claude Code 泄露源码中的 Computer Use（内部代号 "Chicago"）进行的**深度改造版本**。官方实现依赖 Anthropic 内部私有原生模块（`@ant/computer-use-swift`、`@ant/computer-use-input`），无法公开获取。我们**替换了整个底层操作层**，使用 Python bridge（`pyautogui` + `mss` + `pyobjc`）实现所有系统交互，使得任何人都可以在 macOS 上运行 Computer Use 功能。
 

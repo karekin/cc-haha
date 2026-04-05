@@ -1,27 +1,29 @@
 # Claude Code Haha
 
-<p align="right"><a href="./README.md">中文</a> | <strong>English</strong></p>
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="Claude Code Haha Banner" width="800">
+</p>
+
+<div align="center">
+
+[![GitHub Stars](https://img.shields.io/github/stars/NanmiCoder/cc-haha?style=social)](https://github.com/NanmiCoder/cc-haha/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/NanmiCoder/cc-haha?style=social)](https://github.com/NanmiCoder/cc-haha/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/pulls)
+[![License](https://img.shields.io/github/license/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/blob/main/LICENSE)
+[![中文](https://img.shields.io/badge/🇨🇳_中文-Available-green)](README.md)
+[![English](https://img.shields.io/badge/🇺🇸_English-当前-blue)](README.en.md)
+[![Docs](https://img.shields.io/badge/📖_Documentation-Visit-D97757)](https://claudecode-haha.relakkesyang.org)
+
+</div>
 
 A **locally runnable version** repaired from the leaked Claude Code source, with support for any Anthropic-compatible API endpoint such as MiniMax and OpenRouter.
 
 > The original leaked source does not run as-is. This repository fixes multiple blocking issues in the startup path so the full Ink TUI can work locally.
 
 <p align="center">
-  <img src="docs/00runtime.png" alt="Runtime screenshot" width="800">
+  <a href="#features">Features</a> · <a href="#architecture-overview">Architecture</a> · <a href="#quick-start">Quick Start</a> · <a href="docs/en/guide/env-vars.md">Env Vars</a> · <a href="docs/en/guide/faq.md">FAQ</a> · <a href="docs/en/guide/global-usage.md">Global Usage</a> · <a href="#more-documentation">More Docs</a>
 </p>
-
-## Table of Contents
-
-- [Features](#features)
-- [Architecture Overview](#architecture-overview)
-- [Quick Start](#quick-start)
-- [Environment Variables](#environment-variables)
-- [Fallback Mode](#fallback-mode)
-- [Computer Use Desktop Control](#computer-use-desktop-control)
-- [FAQ](#faq)
-- [Fixes Compared with the Original Leaked Source](#fixes-compared-with-the-original-leaked-source)
-- [Project Structure](#project-structure)
-- [Tech Stack](#tech-stack)
 
 ---
 
@@ -30,11 +32,13 @@ A **locally runnable version** repaired from the leaked Claude Code source, with
 - Full Ink TUI experience (matching the official Claude Code interface)
 - `--print` headless mode for scripts and CI
 - MCP server, plugin, and Skills support
-- Custom API endpoint and model support ([Third-Party Models Guide](docs/third-party-models.en.md))
-- **Computer Use desktop control** (screenshots, mouse, keyboard, app management) — [Guide](docs/computer-use.en.md)
-- Fallback Recovery CLI mode
-
-> **Computer Use Note**: This project includes a **modified version of Computer Use**. The official implementation relies on Anthropic's private native modules. We replaced the entire underlying operation layer with a Python bridge (`pyautogui` + `mss` + `pyobjc`), enabling anyone to use Computer Use on macOS. See the [Computer Use Guide](docs/computer-use.en.md) for details.
+- Custom API endpoint and model support ([Third-Party Models Guide](docs/en/guide/third-party-models.md))
+- **Memory System** (cross-session persistent memory) — [Usage Guide](docs/memory/01-usage-guide.md)
+- **Multi-Agent System** (agent orchestration, parallel tasks, Teams collaboration) — [Usage Guide](docs/agent/01-usage-guide.md) | [Implementation](docs/agent/02-implementation.md)
+- **Skills System** (extensible capability plugins, custom workflows) — [Usage Guide](docs/skills/01-usage-guide.md) | [Implementation](docs/skills/02-implementation.md)
+- **Channel System** (remote Agent control via Telegram/Feishu/Discord IM platforms) — [Architecture](docs/en/channel/01-channel-system.md)
+- **Computer Use desktop control** — [Guide](docs/en/features/computer-use.md) | [Architecture](docs/en/features/computer-use-architecture.md)
+- Fallback Recovery CLI mode (`CLAUDE_CODE_FORCE_RECOVERY_CLI=1 ./bin/claude-haha`)
 
 ---
 
@@ -42,16 +46,16 @@ A **locally runnable version** repaired from the leaked Claude Code source, with
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="docs/01-overall-architecture.png" alt="Overall architecture"><br><b>Overall architecture</b></td>
-    <td align="center" width="25%"><img src="docs/02-request-lifecycle.png" alt="Request lifecycle"><br><b>Request lifecycle</b></td>
-    <td align="center" width="25%"><img src="docs/03-tool-system.png" alt="Tool system"><br><b>Tool system</b></td>
-    <td align="center" width="25%"><img src="docs/04-multi-agent.png" alt="Multi-agent architecture"><br><b>Multi-agent architecture</b></td>
+    <td align="center" width="25%"><img src="docs/images/01-overall-architecture.png" alt="Overall architecture"><br><b>Overall architecture</b></td>
+    <td align="center" width="25%"><img src="docs/images/02-request-lifecycle.png" alt="Request lifecycle"><br><b>Request lifecycle</b></td>
+    <td align="center" width="25%"><img src="docs/images/03-tool-system.png" alt="Tool system"><br><b>Tool system</b></td>
+    <td align="center" width="25%"><img src="docs/images/04-multi-agent.png" alt="Multi-agent architecture"><br><b>Multi-agent architecture</b></td>
   </tr>
   <tr>
-    <td align="center" width="25%"><img src="docs/05-terminal-ui.png" alt="Terminal UI"><br><b>Terminal UI</b></td>
-    <td align="center" width="25%"><img src="docs/06-permission-security.png" alt="Permissions and security"><br><b>Permissions and security</b></td>
-    <td align="center" width="25%"><img src="docs/07-services-layer.png" alt="Services layer"><br><b>Services layer</b></td>
-    <td align="center" width="25%"><img src="docs/08-state-data-flow.png" alt="State and data flow"><br><b>State and data flow</b></td>
+    <td align="center" width="25%"><img src="docs/images/05-terminal-ui.png" alt="Terminal UI"><br><b>Terminal UI</b></td>
+    <td align="center" width="25%"><img src="docs/images/06-permission-security.png" alt="Permissions and security"><br><b>Permissions and security</b></td>
+    <td align="center" width="25%"><img src="docs/images/07-services-layer.png" alt="Services layer"><br><b>Services layer</b></td>
+    <td align="center" width="25%"><img src="docs/images/08-state-data-flow.png" alt="State and data flow"><br><b>State and data flow</b></td>
   </tr>
 </table>
 
@@ -61,215 +65,55 @@ A **locally runnable version** repaired from the leaked Claude Code source, with
 
 ### 1. Install Bun
 
-This project requires [Bun](https://bun.sh). If Bun is not installed on the target machine yet, use one of the following methods first:
-
 ```bash
-# macOS / Linux (official install script)
+# macOS / Linux
 curl -fsSL https://bun.sh/install | bash
-```
 
-If a minimal Linux image reports `unzip is required to install bun`, install `unzip` first:
-
-```bash
-# Ubuntu / Debian
-apt update && apt install -y unzip
-```
-
-```bash
 # macOS (Homebrew)
 brew install bun
-```
 
-```powershell
 # Windows (PowerShell)
 powershell -c "irm bun.sh/install.ps1 | iex"
 ```
 
-After installation, reopen the terminal and verify:
+> On minimal Linux images, if you see `unzip is required`, run `apt update && apt install -y unzip` first.
 
-```bash
-bun --version
-```
-
-### 2. Install project dependencies
+### 2. Install Dependencies and Configure
 
 ```bash
 bun install
-```
-
-### 3. Configure environment variables
-
-Copy the example file and fill in your API key:
-
-```bash
 cp .env.example .env
+# Edit .env with your API key — see docs/en/guide/env-vars.md for details
 ```
 
-Edit `.env` (the example below uses [MiniMax](https://platform.minimaxi.com/subscribe/token-plan?code=1TG2Cseab2&source=link) as the API provider — you can replace it with any compatible service):
-
-```env
-# API authentication (choose one)
-ANTHROPIC_API_KEY=sk-xxx          # Standard API key via x-api-key header
-ANTHROPIC_AUTH_TOKEN=sk-xxx       # Bearer token via Authorization header
-
-# API endpoint (optional, defaults to Anthropic)
-ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
-
-# Model configuration
-ANTHROPIC_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_SONNET_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_HAIKU_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_OPUS_MODEL=MiniMax-M2.7-highspeed
-
-# Timeout in milliseconds
-API_TIMEOUT_MS=3000000
-
-# Disable telemetry and non-essential network traffic
-DISABLE_TELEMETRY=1
-CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-```
-
-> **Tip**: You can also configure environment variables via the `env` field in `~/.claude/settings.json`. This is consistent with the official Claude Code configuration:
->
-> ```json
-> {
->   "env": {
->     "ANTHROPIC_AUTH_TOKEN": "sk-xxx",
->     "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
->     "ANTHROPIC_MODEL": "MiniMax-M2.7-highspeed"
->   }
-> }
-> ```
->
-> Priority: Environment variables > `.env` file > `~/.claude/settings.json`
-
-### 4. Start
+### 3. Start
 
 #### macOS / Linux
 
 ```bash
-# Interactive TUI mode (full interface)
-./bin/claude-haha
-
-# Headless mode (single prompt)
-./bin/claude-haha -p "your prompt here"
-
-# Pipe input
-echo "explain this code" | ./bin/claude-haha -p
-
-# Show all options
-./bin/claude-haha --help
+./bin/claude-haha                          # Interactive TUI mode
+./bin/claude-haha -p "your prompt here"    # Headless mode
+./bin/claude-haha --help                   # Show all options
 ```
 
 #### Windows
 
-> **Prerequisite**: [Git for Windows](https://git-scm.com/download/win) must be installed (provides Git Bash, which the project's internal shell execution depends on).
-
-The startup script `bin/claude-haha` is a bash script and cannot run directly in cmd or PowerShell. Use one of the following methods:
-
-**Option 1: PowerShell / cmd — call Bun directly (recommended)**
+> **Prerequisite**: [Git for Windows](https://git-scm.com/download/win) must be installed.
 
 ```powershell
-# Interactive TUI mode
+# PowerShell / cmd — call Bun directly
 bun --env-file=.env ./src/entrypoints/cli.tsx
 
-# Headless mode
-bun --env-file=.env ./src/entrypoints/cli.tsx -p "your prompt here"
-
-# Fallback Recovery CLI
-bun --env-file=.env ./src/localRecoveryCli.ts
-```
-
-**Option 2: Run inside Git Bash**
-
-```bash
-# Same usage as macOS / Linux
+# Or run inside Git Bash
 ./bin/claude-haha
 ```
 
-> **Note**: Some features (voice input, Computer Use, sandbox isolation, etc.) are not available on Windows. This does not affect the core TUI interaction.
+### 4. Global Usage (Optional)
 
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|------|------|------|
-| `ANTHROPIC_API_KEY` | One of two | API key sent via the `x-api-key` header |
-| `ANTHROPIC_AUTH_TOKEN` | One of two | Auth token sent via the `Authorization: Bearer` header |
-| `ANTHROPIC_BASE_URL` | No | Custom API endpoint, defaults to Anthropic |
-| `ANTHROPIC_MODEL` | No | Default model |
-| `ANTHROPIC_DEFAULT_SONNET_MODEL` | No | Sonnet-tier model mapping |
-| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | No | Haiku-tier model mapping |
-| `ANTHROPIC_DEFAULT_OPUS_MODEL` | No | Opus-tier model mapping |
-| `API_TIMEOUT_MS` | No | API request timeout, default `600000` (10min) |
-| `DISABLE_TELEMETRY` | No | Set to `1` to disable telemetry |
-| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | No | Set to `1` to disable non-essential network traffic |
-
----
-
-## Fallback Mode
-
-If the full TUI has issues, use the simplified readline-based interaction mode:
+Add `bin/` to your PATH to run from any directory. See [Global Usage Guide](docs/en/guide/global-usage.md):
 
 ```bash
-CLAUDE_CODE_FORCE_RECOVERY_CLI=1 ./bin/claude-haha
-```
-
----
-
-## Computer Use Desktop Control
-
-This project enables and modifies Claude Code's Computer Use feature (internal codename "Chicago"), allowing AI models to directly control your macOS desktop — screenshots, mouse clicks, keyboard input, app management.
-
-**Underlying modification**: The official implementation depends on Anthropic's private native modules (`@ant/computer-use-swift`, `@ant/computer-use-input`). This project replaces them entirely with a Python bridge using `pyautogui` (mouse/keyboard), `mss` (screenshots), and `pyobjc` (macOS APIs) — no closed-source binaries required.
-
-```bash
-# Ensure Python 3 and macOS Accessibility/Screen Recording permissions, then:
-./bin/claude-haha
-> Take a screenshot
-> Open Safari and search for something
-```
-
-For supported platforms, technical architecture, and approaches we tried, see: **[Computer Use Guide](docs/computer-use.en.md)**
-
----
-
-## Fixes Compared with the Original Leaked Source
-
-The leaked source could not run directly. This repository mainly fixes the following issues:
-
-| Issue | Root cause | Fix |
-|------|------|------|
-| TUI does not start | The entry script routed no-argument startup to the recovery CLI | Restored the full `cli.tsx` entry |
-| Startup hangs | The `verify` skill imports a missing `.md` file, causing Bun's text loader to hang indefinitely | Added stub `.md` files |
-| `--print` hangs | `filePersistence/types.ts` was missing | Added type stub files |
-| `--print` hangs | `ultraplan/prompt.txt` was missing | Added resource stub files |
-| **Enter key does nothing** | The `modifiers-napi` native package was missing, `isModifierPressed()` threw, `handleEnter` was interrupted, and `onSubmit` never ran | Added try/catch fault tolerance |
-| Setup was skipped | `preload.ts` automatically set `LOCAL_RECOVERY=1`, skipping all initialization | Removed the default setting |
-
----
-
-## Project Structure
-
-```text
-bin/claude-haha          # Entry script
-preload.ts               # Bun preload (sets MACRO globals)
-.env.example             # Environment variable template
-src/
-├── entrypoints/cli.tsx  # Main CLI entry
-├── main.tsx             # Main TUI logic (Commander.js + React/Ink)
-├── localRecoveryCli.ts  # Fallback Recovery CLI
-├── setup.ts             # Startup initialization
-├── screens/REPL.tsx     # Interactive REPL screen
-├── ink/                 # Ink terminal rendering engine
-├── components/          # UI components
-├── tools/               # Agent tools (Bash, Edit, Grep, etc.)
-├── commands/            # Slash commands (/commit, /review, etc.)
-├── skills/              # Skill system
-├── services/            # Service layer (API, MCP, OAuth, etc.)
-├── hooks/               # React hooks
-└── utils/               # Utility functions
+export PATH="$HOME/path/to/claude-code-haha/bin:$PATH"
 ```
 
 ---
@@ -287,39 +131,21 @@ src/
 
 ---
 
-## FAQ
+## More Documentation
 
-### Q: `undefined is not an object (evaluating 'usage.input_tokens')`
-
-**Cause**: `ANTHROPIC_BASE_URL` is misconfigured. The API endpoint is returning HTML or another non-JSON format instead of a valid Anthropic protocol response.
-
-This project uses the **Anthropic Messages API protocol**. `ANTHROPIC_BASE_URL` must point to an endpoint compatible with Anthropic's `/v1/messages` interface. The Anthropic SDK automatically appends `/v1/messages` to the base URL, so:
-
-- MiniMax: `ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic` ✅
-- OpenRouter: `ANTHROPIC_BASE_URL=https://openrouter.ai/api` ✅
-- OpenRouter (wrong): `ANTHROPIC_BASE_URL=https://openrouter.ai/anthropic` ❌ (returns HTML)
-
-If your model provider only supports the OpenAI protocol, you need a proxy like LiteLLM for protocol translation. See the [Third-Party Models Guide](docs/third-party-models.en.md).
-
-### Q: `Cannot find package 'bundle'`
-
-```
-error: Cannot find package 'bundle' from '.../claude-code-haha/src/entrypoints/cli.tsx'
-```
-
-**Cause**: Your Bun version is too old and doesn't support the required `bun:bundle` built-in module.
-
-**Fix**: Upgrade Bun to the latest version:
-
-```bash
-bun upgrade
-```
-
-### Q: How to use OpenAI / DeepSeek / Ollama or other non-Anthropic models?
-
-This project only supports the Anthropic protocol. If your model provider doesn't natively support the Anthropic protocol, you need a proxy like [LiteLLM](https://github.com/BerriAI/litellm) for protocol translation (OpenAI → Anthropic).
-
-See the [Third-Party Models Guide](docs/third-party-models.en.md) for detailed setup instructions.
+| Document | Description |
+|------|------|
+| [Environment Variables](docs/en/guide/env-vars.md) | Full env var reference and configuration methods |
+| [Third-Party Models](docs/en/guide/third-party-models.md) | Using OpenAI / DeepSeek / Ollama and other non-Anthropic models |
+| [Memory System](docs/memory/01-usage-guide.md) | Cross-session persistent memory usage and implementation |
+| [Multi-Agent System](docs/agent/01-usage-guide.md) | Agent orchestration, parallel tasks and Teams collaboration |
+| [Skills System](docs/skills/01-usage-guide.md) | Extensible capability plugins, custom workflows and conditional activation |
+| [Channel System](docs/en/channel/01-channel-system.md) | Remote Agent control via Telegram/Feishu/Discord IM platforms |
+| [Computer Use](docs/en/features/computer-use.md) | Desktop control (screenshots, mouse, keyboard) — [Architecture](docs/en/features/computer-use-architecture.md) |
+| [Global Usage](docs/en/guide/global-usage.md) | Run claude-haha from any directory |
+| [FAQ](docs/en/guide/faq.md) | Common error troubleshooting |
+| [Source Fixes](docs/en/reference/fixes.md) | Fixes compared with the original leaked source |
+| [Project Structure](docs/en/reference/project-structure.md) | Code directory structure |
 
 ---
 

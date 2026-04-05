@@ -1,27 +1,29 @@
 # Claude Code Haha
 
-<p align="right"><strong>中文</strong> | <a href="./README.en.md">English</a></p>
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="Claude Code Haha Banner" width="800">
+</p>
+
+<div align="center">
+
+[![GitHub Stars](https://img.shields.io/github/stars/NanmiCoder/cc-haha?style=social)](https://github.com/NanmiCoder/cc-haha/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/NanmiCoder/cc-haha?style=social)](https://github.com/NanmiCoder/cc-haha/network/members)
+[![GitHub Issues](https://img.shields.io/github/issues/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/pulls)
+[![License](https://img.shields.io/github/license/NanmiCoder/cc-haha)](https://github.com/NanmiCoder/cc-haha/blob/main/LICENSE)
+[![中文](https://img.shields.io/badge/🇨🇳_中文-当前-blue)](README.md)
+[![English](https://img.shields.io/badge/🇺🇸_English-Available-green)](README.en.md)
+[![Docs](https://img.shields.io/badge/📖_文档站点-Visit-D97757)](https://claudecode-haha.relakkesyang.org)
+
+</div>
 
 基于 Claude Code 泄露源码修复的**本地可运行版本**，支持接入任意 Anthropic 兼容 API（如 MiniMax、OpenRouter 等）。
 
 > 原始泄露源码无法直接运行。本仓库修复了启动链路中的多个阻塞问题，使完整的 Ink TUI 交互界面可以在本地工作。
 
 <p align="center">
-  <img src="docs/00runtime.png" alt="运行截图" width="800">
+  <a href="#功能">功能</a> · <a href="#架构概览">架构概览</a> · <a href="#快速开始">快速开始</a> · <a href="docs/guide/env-vars.md">环境变量</a> · <a href="docs/guide/faq.md">FAQ</a> · <a href="docs/guide/global-usage.md">全局使用</a> · <a href="#更多文档">更多文档</a>
 </p>
-
-## 目录
-
-- [功能](#功能)
-- [架构概览](#架构概览)
-- [快速开始](#快速开始)
-- [环境变量说明](#环境变量说明)
-- [降级模式](#降级模式)
-- [Computer Use 桌面控制](#computer-use-桌面控制)
-- [常见问题](#常见问题)
-- [相对于原始泄露源码的修复](#相对于原始泄露源码的修复)
-- [项目结构](#项目结构)
-- [技术栈](#技术栈)
 
 ---
 
@@ -30,11 +32,13 @@
 - 完整的 Ink TUI 交互界面（与官方 Claude Code 一致）
 - `--print` 无头模式（脚本/CI 场景）
 - 支持 MCP 服务器、插件、Skills
-- 支持自定义 API 端点和模型（[第三方模型使用指南](docs/third-party-models.md)）
-- **Computer Use 桌面控制**（截屏、鼠标、键盘、应用管理）— [使用指南](docs/computer-use.md)
-- 降级 Recovery CLI 模式
-
-> **Computer Use 说明**：本项目包含**魔改版的 Computer Use** 功能。官方实现依赖 Anthropic 私有原生模块，我们替换了整个底层操作层，使用 Python bridge（`pyautogui` + `mss` + `pyobjc`）实现，使得任何人都可以在 macOS 上使用。详见 [Computer Use 功能指南](docs/computer-use.md)。
+- 支持自定义 API 端点和模型（[第三方模型使用指南](docs/guide/third-party-models.md)）
+- **记忆系统**（跨会话持久化记忆）— [使用指南](docs/memory/01-usage-guide.md)
+- **多 Agent 系统**（多代理编排、并行任务、Teams 协作）— [使用指南](docs/agent/01-usage-guide.md) | [实现原理](docs/agent/02-implementation.md)
+- **Skills 系统**（可扩展能力插件、自定义工作流）— [使用指南](docs/skills/01-usage-guide.md) | [实现原理](docs/skills/02-implementation.md)
+- **Channel 系统**（通过 Telegram/飞书/Discord 等 IM 远程控制 Agent）— [架构解析](docs/channel/01-channel-system.md)
+- **Computer Use 桌面控制** — [功能指南](docs/features/computer-use.md) | [架构解析](docs/features/computer-use-architecture.md)
+- 降级 Recovery CLI 模式（`CLAUDE_CODE_FORCE_RECOVERY_CLI=1 ./bin/claude-haha`）
 
 ---
 
@@ -42,16 +46,16 @@
 
 <table>
   <tr>
-    <td align="center" width="25%"><img src="docs/01-overall-architecture.png" alt="整体架构"><br><b>整体架构</b></td>
-    <td align="center" width="25%"><img src="docs/02-request-lifecycle.png" alt="请求生命周期"><br><b>请求生命周期</b></td>
-    <td align="center" width="25%"><img src="docs/03-tool-system.png" alt="工具系统"><br><b>工具系统</b></td>
-    <td align="center" width="25%"><img src="docs/04-multi-agent.png" alt="多 Agent 架构"><br><b>多 Agent 架构</b></td>
+    <td align="center" width="25%"><img src="docs/images/01-overall-architecture.png" alt="整体架构"><br><b>整体架构</b></td>
+    <td align="center" width="25%"><img src="docs/images/02-request-lifecycle.png" alt="请求生命周期"><br><b>请求生命周期</b></td>
+    <td align="center" width="25%"><img src="docs/images/03-tool-system.png" alt="工具系统"><br><b>工具系统</b></td>
+    <td align="center" width="25%"><img src="docs/images/04-multi-agent.png" alt="多 Agent 架构"><br><b>多 Agent 架构</b></td>
   </tr>
   <tr>
-    <td align="center" width="25%"><img src="docs/05-terminal-ui.png" alt="终端 UI"><br><b>终端 UI</b></td>
-    <td align="center" width="25%"><img src="docs/06-permission-security.png" alt="权限与安全"><br><b>权限与安全</b></td>
-    <td align="center" width="25%"><img src="docs/07-services-layer.png" alt="服务层"><br><b>服务层</b></td>
-    <td align="center" width="25%"><img src="docs/08-state-data-flow.png" alt="状态与数据流"><br><b>状态与数据流</b></td>
+    <td align="center" width="25%"><img src="docs/images/05-terminal-ui.png" alt="终端 UI"><br><b>终端 UI</b></td>
+    <td align="center" width="25%"><img src="docs/images/06-permission-security.png" alt="权限与安全"><br><b>权限与安全</b></td>
+    <td align="center" width="25%"><img src="docs/images/07-services-layer.png" alt="服务层"><br><b>服务层</b></td>
+    <td align="center" width="25%"><img src="docs/images/08-state-data-flow.png" alt="状态与数据流"><br><b>状态与数据流</b></td>
   </tr>
 </table>
 
@@ -61,215 +65,55 @@
 
 ### 1. 安装 Bun
 
-本项目运行依赖 [Bun](https://bun.sh)。如果你的电脑还没有安装 Bun，可以先执行下面任一方式：
-
 ```bash
-# macOS / Linux（官方安装脚本）
+# macOS / Linux
 curl -fsSL https://bun.sh/install | bash
-```
 
-如果在精简版 Linux 环境里提示 `unzip is required to install bun`，先安装 `unzip`：
-
-```bash
-# Ubuntu / Debian
-apt update && apt install -y unzip
-```
-
-```bash
-# macOS（Homebrew）
+# macOS (Homebrew)
 brew install bun
-```
 
-```powershell
-# Windows（PowerShell）
+# Windows (PowerShell)
 powershell -c "irm bun.sh/install.ps1 | iex"
 ```
 
-安装完成后，重新打开终端并确认：
+> 精简版 Linux 如提示 `unzip is required`，先运行 `apt update && apt install -y unzip`
 
-```bash
-bun --version
-```
-
-### 2. 安装项目依赖
+### 2. 安装依赖并配置
 
 ```bash
 bun install
-```
-
-### 3. 配置环境变量
-
-复制示例文件并填入你的 API Key：
-
-```bash
 cp .env.example .env
+# 编辑 .env 填入你的 API Key，详见 docs/guide/env-vars.md
 ```
 
-编辑 `.env`（以下示例使用 [MiniMax](https://platform.minimaxi.com/subscribe/token-plan?code=1TG2Cseab2&source=link) 作为 API 提供商，也可替换为其他兼容服务）：
-
-```env
-# API 认证（二选一）
-ANTHROPIC_API_KEY=sk-xxx          # 标准 API Key（x-api-key 头）
-ANTHROPIC_AUTH_TOKEN=sk-xxx       # Bearer Token（Authorization 头）
-
-# API 端点（可选，默认 Anthropic 官方）
-ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic
-
-# 模型配置
-ANTHROPIC_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_SONNET_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_HAIKU_MODEL=MiniMax-M2.7-highspeed
-ANTHROPIC_DEFAULT_OPUS_MODEL=MiniMax-M2.7-highspeed
-
-# 超时（毫秒）
-API_TIMEOUT_MS=3000000
-
-# 禁用遥测和非必要网络请求
-DISABLE_TELEMETRY=1
-CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
-```
-
-> **提示**：除了 `.env` 文件，你也可以通过 `~/.claude/settings.json` 的 `env` 字段配置环境变量。这与官方 Claude Code 的配置方式一致：
->
-> ```json
-> {
->   "env": {
->     "ANTHROPIC_AUTH_TOKEN": "sk-xxx",
->     "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
->     "ANTHROPIC_MODEL": "MiniMax-M2.7-highspeed"
->   }
-> }
-> ```
->
-> 配置优先级：环境变量 > `.env` 文件 > `~/.claude/settings.json`
-
-### 4. 启动
+### 3. 启动
 
 #### macOS / Linux
 
 ```bash
-# 交互 TUI 模式（完整界面）
-./bin/claude-haha
-
-# 无头模式（单次问答）
-./bin/claude-haha -p "your prompt here"
-
-# 管道输入
-echo "explain this code" | ./bin/claude-haha -p
-
-# 查看所有选项
-./bin/claude-haha --help
+./bin/claude-haha                          # 交互 TUI 模式
+./bin/claude-haha -p "your prompt here"    # 无头模式
+./bin/claude-haha --help                   # 查看所有选项
 ```
 
 #### Windows
 
-> **前置要求**：必须安装 [Git for Windows](https://git-scm.com/download/win)（提供 Git Bash，项目内部 Shell 执行依赖它）。
-
-Windows 下启动脚本 `bin/claude-haha` 是 bash 脚本，无法在 cmd / PowerShell 中直接运行。请使用以下方式：
-
-**方式一：PowerShell / cmd 直接调用 Bun（推荐）**
+> **前置要求**：必须安装 [Git for Windows](https://git-scm.com/download/win)
 
 ```powershell
-# 交互 TUI 模式
+# PowerShell / cmd 直接调用 Bun
 bun --env-file=.env ./src/entrypoints/cli.tsx
 
-# 无头模式
-bun --env-file=.env ./src/entrypoints/cli.tsx -p "your prompt here"
-
-# 降级 Recovery CLI
-bun --env-file=.env ./src/localRecoveryCli.ts
-```
-
-**方式二：Git Bash 中运行**
-
-```bash
-# 在 Git Bash 终端中，与 macOS/Linux 用法一致
+# 或在 Git Bash 中运行
 ./bin/claude-haha
 ```
 
-> **注意**：部分功能（语音输入、Computer Use、Sandbox 隔离等）在 Windows 上不可用，不影响核心 TUI 交互。
+### 4. 全局使用（可选）
 
----
-
-## 环境变量说明
-
-| 变量 | 必填 | 说明 |
-|------|------|------|
-| `ANTHROPIC_API_KEY` | 二选一 | API Key，通过 `x-api-key` 头发送 |
-| `ANTHROPIC_AUTH_TOKEN` | 二选一 | Auth Token，通过 `Authorization: Bearer` 头发送 |
-| `ANTHROPIC_BASE_URL` | 否 | 自定义 API 端点，默认 Anthropic 官方 |
-| `ANTHROPIC_MODEL` | 否 | 默认模型 |
-| `ANTHROPIC_DEFAULT_SONNET_MODEL` | 否 | Sonnet 级别模型映射 |
-| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | 否 | Haiku 级别模型映射 |
-| `ANTHROPIC_DEFAULT_OPUS_MODEL` | 否 | Opus 级别模型映射 |
-| `API_TIMEOUT_MS` | 否 | API 请求超时，默认 600000 (10min) |
-| `DISABLE_TELEMETRY` | 否 | 设为 `1` 禁用遥测 |
-| `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | 否 | 设为 `1` 禁用非必要网络请求 |
-
----
-
-## 降级模式
-
-如果完整 TUI 出现问题，可以使用简化版 readline 交互模式：
+将 `bin/` 加入 PATH 后可在任意目录启动，详见 [全局使用指南](docs/guide/global-usage.md)：
 
 ```bash
-CLAUDE_CODE_FORCE_RECOVERY_CLI=1 ./bin/claude-haha
-```
-
----
-
-## Computer Use 桌面控制
-
-本项目启用并改造了 Claude Code 的 Computer Use 功能（内部代号 "Chicago"），让 AI 模型可以直接控制你的 macOS 桌面——截屏、鼠标点击、键盘输入、应用管理。
-
-**底层改造**：官方实现依赖 Anthropic 私有原生模块（`@ant/computer-use-swift`、`@ant/computer-use-input`），本项目用 Python bridge 完全替代，使用 `pyautogui`（鼠标键盘）、`mss`（截图）、`pyobjc`（macOS API），无需任何闭源二进制。
-
-```bash
-# 确保有 Python 3 和 macOS 辅助功能/屏幕录制权限，然后直接使用：
-./bin/claude-haha
-> 帮我截个屏
-> 打开网易云音乐搜索一首歌
-```
-
-详细说明、支持的设备列表、技术架构和尝试过的方案请参考：**[Computer Use 功能指南](docs/computer-use.md)**
-
----
-
-## 相对于原始泄露源码的修复
-
-泄露的源码无法直接运行，主要修复了以下问题：
-
-| 问题 | 根因 | 修复 |
-|------|------|------|
-| TUI 不启动 | 入口脚本把无参数启动路由到了 recovery CLI | 恢复走 `cli.tsx` 完整入口 |
-| 启动卡死 | `verify` skill 导入缺失的 `.md` 文件，Bun text loader 无限挂起 | 创建 stub `.md` 文件 |
-| `--print` 卡死 | `filePersistence/types.ts` 缺失 | 创建类型桩文件 |
-| `--print` 卡死 | `ultraplan/prompt.txt` 缺失 | 创建资源桩文件 |
-| **Enter 键无响应** | `modifiers-napi` native 包缺失，`isModifierPressed()` 抛异常导致 `handleEnter` 中断，`onSubmit` 永远不执行 | 加 try-catch 容错 |
-| setup 被跳过 | `preload.ts` 自动设置 `LOCAL_RECOVERY=1` 跳过全部初始化 | 移除默认设置 |
-
----
-
-## 项目结构
-
-```
-bin/claude-haha          # 入口脚本
-preload.ts               # Bun preload（设置 MACRO 全局变量）
-.env.example             # 环境变量模板
-src/
-├── entrypoints/cli.tsx  # CLI 主入口
-├── main.tsx             # TUI 主逻辑（Commander.js + React/Ink）
-├── localRecoveryCli.ts  # 降级 Recovery CLI
-├── setup.ts             # 启动初始化
-├── screens/REPL.tsx     # 交互 REPL 界面
-├── ink/                 # Ink 终端渲染引擎
-├── components/          # UI 组件
-├── tools/               # Agent 工具（Bash, Edit, Grep 等）
-├── commands/            # 斜杠命令（/commit, /review 等）
-├── skills/              # Skill 系统
-├── services/            # 服务层（API, MCP, OAuth 等）
-├── hooks/               # React hooks
-└── utils/               # 工具函数
+export PATH="$HOME/path/to/claude-code-haha/bin:$PATH"
 ```
 
 ---
@@ -287,39 +131,21 @@ src/
 
 ---
 
-## 常见问题
+## 更多文档
 
-### Q: `undefined is not an object (evaluating 'usage.input_tokens')`
-
-**原因**：`ANTHROPIC_BASE_URL` 配置不正确，API 端点返回的不是 Anthropic 协议格式的 JSON，而是 HTML 页面或其他格式。
-
-本项目使用 **Anthropic Messages API 协议**，`ANTHROPIC_BASE_URL` 必须指向一个兼容 Anthropic `/v1/messages` 接口的端点。Anthropic SDK 会自动在 base URL 后面拼接 `/v1/messages`，所以：
-
-- MiniMax：`ANTHROPIC_BASE_URL=https://api.minimaxi.com/anthropic` ✅
-- OpenRouter：`ANTHROPIC_BASE_URL=https://openrouter.ai/api` ✅
-- OpenRouter 错误写法：`ANTHROPIC_BASE_URL=https://openrouter.ai/anthropic` ❌（返回 HTML）
-
-如果你的模型供应商只支持 OpenAI 协议，需要通过 LiteLLM 等代理做协议转换，详见 [第三方模型使用指南](docs/third-party-models.md)。
-
-### Q: `Cannot find package 'bundle'`
-
-```
-error: Cannot find package 'bundle' from '.../claude-code-haha/src/entrypoints/cli.tsx'
-```
-
-**原因**：Bun 版本过低，不支持项目所需的 `bun:bundle` 等内置模块。
-
-**解决**：升级 Bun 到最新版本：
-
-```bash
-bun upgrade
-```
-
-### Q: 怎么接入 OpenAI / DeepSeek / Ollama 等非 Anthropic 模型？
-
-本项目只支持 Anthropic 协议。如果模型供应商不直接支持 Anthropic 协议，需要用 [LiteLLM](https://github.com/BerriAI/litellm) 等代理做协议转换（OpenAI → Anthropic）。
-
-详细配置步骤请参考：[第三方模型使用指南](docs/third-party-models.md)
+| 文档 | 说明 |
+|------|------|
+| [环境变量](docs/guide/env-vars.md) | 完整环境变量参考和配置方式 |
+| [第三方模型](docs/guide/third-party-models.md) | 接入 OpenAI / DeepSeek / Ollama 等非 Anthropic 模型 |
+| [记忆系统](docs/memory/01-usage-guide.md) | 跨会话持久化记忆的使用与实现 |
+| [多 Agent 系统](docs/agent/01-usage-guide.md) | 多代理编排、并行任务执行与 Teams 协作 |
+| [Skills 系统](docs/skills/01-usage-guide.md) | 可扩展能力插件、自定义工作流与条件激活 |
+| [Channel 系统](docs/channel/01-channel-system.md) | 通过 Telegram/飞书/Discord 等 IM 平台远程控制 Agent |
+| [Computer Use](docs/features/computer-use.md) | 桌面控制功能（截屏、鼠标、键盘）— [架构解析](docs/features/computer-use-architecture.md) |
+| [全局使用](docs/guide/global-usage.md) | 在任意目录启动 claude-haha |
+| [常见问题](docs/guide/faq.md) | 常见错误排查 |
+| [源码修复记录](docs/reference/fixes.md) | 相对于原始泄露源码的修复内容 |
+| [项目结构](docs/reference/project-structure.md) | 代码目录结构说明 |
 
 ---
 
