@@ -2,7 +2,15 @@
 .env.*
 !.env.example
 node_modules
+.DS_Store
 
 # Computer Use runtime (auto-generated)
 .runtime/
 extracted-natives/
+
+# Local orchestration/runtime state
+.omx/
+
+# Local research / imported notes / working docs
+工作日志/
+Claude Code 源码深度架构分析.md/
