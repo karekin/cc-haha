@@ -130,6 +130,20 @@ import {
   runPreToolUseHooks,
 } from './toolHooks.js'
 
+/**
+ * `toolExecution.ts` 是所有工具调用的统一执行网关。
+ *
+ * 它的职责不是实现某个具体工具，而是把“工具被模型调用之后”要经过的公共流程统一起来：
+ * - 输入解析与业务校验；
+ * - pre-hook / permission / classifier / canUseTool；
+ * - tool span / telemetry / session activity；
+ * - 调用具体工具；
+ * - 把结果包装成消息并回流到 query loop；
+ * - 失败时统一生成 tool_result error。
+ *
+ * 如果把具体工具看成“插件”，那这个文件就是所有插件执行前后的公共 runtime。
+ */
+
 /** Minimum total hook duration (ms) to show inline timing summary */
 export const HOOK_TIMING_DISPLAY_THRESHOLD_MS = 500
 /** Log a debug warning when hooks/permission-decision block for this long. Matches
@@ -340,6 +354,16 @@ export async function* runToolUse(
   canUseTool: CanUseToolFn,
   toolUseContext: ToolUseContext,
 ): AsyncGenerator<MessageUpdateLazy, void> {
+  /**
+   * `runToolUse()` 是“把一个模型输出的 tool_use 事件真正跑起来”的入口。
+   *
+   * 它负责：
+   * - 先根据 tool name 找到实际 Tool 实现（含 alias 兼容）；
+   * - 再把这次调用交给 `checkPermissionsAndCallTool()`；
+   * - 最终把成功/失败都转换为统一的消息流。
+   *
+   * 可以把它理解成：单个 tool_use block 的调度器。
+   */
   const toolName = toolUse.name
   // First try to find in the available tools (what the model sees)
   let tool = findToolByName(toolUseContext.options.tools, toolName)
@@ -501,6 +525,19 @@ function streamedCheckPermissionsAndCallTool(
   mcpServerType: McpServerType,
   mcpServerBaseUrl: ReturnType<typeof getLoggingSafeMcpBaseUrl>,
 ): AsyncIterable<MessageUpdateLazy> {
+  /**
+   * 把“最终结果”和“中间进度”统一包装成一个 AsyncIterable。
+   *
+   * 背景：
+   * - `checkPermissionsAndCallTool()` 最终返回的是完整结果数组；
+   * - 但某些工具（尤其 Bash / MCP / 长耗时任务）在执行过程中还会产生进度事件；
+   * - query loop 希望把它们当作同一条异步消息流来消费。
+   *
+   * 因此这里用 `Stream<MessageUpdateLazy>` 做了一层桥接，把：
+   * - progress → 立即 enqueue
+   * - final results → 完成后逐条 enqueue
+   * 统一成一个可 `for await` 的数据源。
+   */
   // This is a bit of a hack to get progress events and final results
   // into a single async iterable.
   //
@@ -611,6 +648,20 @@ async function checkPermissionsAndCallTool(
     progress: ToolProgress<ToolProgressData> | ProgressMessage<HookProgress>,
   ) => void,
 ): Promise<MessageUpdateLazy[]> {
+  /**
+   * 单个工具调用的完整执行主流程。
+   *
+   * 大致顺序是：
+   * 1. schema 校验（Zod）；
+   * 2. 业务校验（validateInput）；
+   * 3. pre-tool hooks；
+   * 4. permission / classifier / canUseTool；
+   * 5. 真正执行 tool.call()；
+   * 6. post-tool hooks；
+   * 7. 把结果统一包装为 MessageUpdateLazy[] 返回。
+   *
+   * 这是工具系统与 query loop 之间最关键的一层胶水代码。
+   */
   // Validate input types with zod (surprisingly, the model is not great at generating valid input)
   const parsedInput = tool.inputSchema.safeParse(input)
   if (!parsedInput.success) {

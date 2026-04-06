@@ -12,6 +12,20 @@ import type { Command } from './commands.js'
 import type { CanUseToolFn } from './hooks/useCanUseTool.js'
 import type { ThinkingConfig } from './utils/thinking.js'
 
+/**
+ * `Tool.ts` 是整个工具系统的类型与契约中心。
+ *
+ * 它回答了四个核心问题：
+ * 1. 一个工具的输入/输出长什么样？
+ * 2. 工具执行时能拿到哪些运行时上下文？
+ * 3. 工具应该暴露哪些生命周期方法？
+ * 4. 如果工具作者没有显式声明某些属性，系统默认应该怎么处理？
+ *
+ * Claude Code 的一个关键设计理念是：
+ * “模型的能力边界 = 当前可用的工具边界”。
+ * 因此这个文件虽然大多是类型定义，但实际上是整个系统能力模型的根基。
+ */
+
 export type ToolInputJSONSchema = {
   [x: string]: unknown
   type: 'object'
@@ -87,11 +101,26 @@ import type { AttributionState } from './utils/commitAttribution.js'
 import type { FileHistoryState } from './utils/fileHistory.js'
 import type { Theme, ThemeName } from './utils/theme.js'
 
+/**
+ * 标识一条 query 链在多轮调用、子 agent、工具执行之间的传播关系。
+ *
+ * 主要用途：
+ * - 遥测中标出“这次请求属于哪条链”；
+ * - 区分主链与子链；
+ * - 观察递归/派生查询的深度。
+ */
 export type QueryChainTracking = {
   chainId: string
   depth: number
 }
 
+/**
+ * 工具级输入校验结果。
+ *
+ * 注意它和 schema 校验不是一回事：
+ * - schema 校验解决“结构/类型是否正确”；
+ * - `ValidationResult` 解决“业务值是否合理”。
+ */
 export type ValidationResult =
   | { result: true }
   | {
@@ -119,7 +148,18 @@ import type { ToolPermissionRulesBySource } from './types/permissions.js'
 // Re-export for backwards compatibility
 export type { ToolPermissionRulesBySource }
 
-// Apply DeepImmutable to the imported type
+/**
+ * 当前会话的工具权限上下文。
+ *
+ * 这里包含的是“工具调用前的全局安全状态”，例如：
+ * - 当前 permission mode；
+ * - allow / deny / ask 规则；
+ * - 是否允许 bypass / auto；
+ * - 是否应避免弹权限框；
+ * - plan mode 前的原权限模式等。
+ *
+ * 使用 `DeepImmutable` 的目的，是尽量避免运行期代码意外篡改权限上下文。
+ */
 export type ToolPermissionContext = DeepImmutable<{
   mode: PermissionMode
   additionalWorkingDirectories: Map<string, AdditionalWorkingDirectory>
@@ -156,6 +196,19 @@ export type CompactProgressEvent =
   | { type: 'compact_end' }
 
 export type ToolUseContext = {
+  /**
+   * `ToolUseContext` 是工具运行时能看到的“完整世界状态”。
+   *
+   * 它不仅仅是参数，还包含：
+   * - 当前 appState 与更新能力；
+   * - 当前消息列表；
+   * - abort controller；
+   * - 权限相关状态；
+   * - 多 agent / teammate 信息；
+   * - 文件历史、attribution、OS 通知、UI 回调等。
+   *
+   * 几乎所有“工具与系统环境交互”的能力都从这里注入。
+   */
   options: {
     commands: Command[]
     debug: boolean
@@ -364,6 +417,16 @@ export type Tool<
   Output = unknown,
   P extends ToolProgressData = ToolProgressData,
 > = {
+  /**
+   * Tool 接口本体。
+   *
+   * 一个工具通常需要解决三类问题：
+   * 1. 如何向模型描述自己（description / schema / searchHint）；
+   * 2. 如何在运行前做权限/输入校验（checkPermissions / validateInput）；
+   * 3. 如何真正执行并把结果返还给消息系统（call / render / progress）。
+   *
+   * 这也是 Claude Code “一切能力通过工具暴露”这条设计原则的落点。
+   */
   /**
    * Optional aliases for backwards compatibility when a tool is renamed.
    * The tool can be looked up by any of these names in addition to its primary name.
@@ -781,6 +844,15 @@ type ToolDefaults = typeof TOOL_DEFAULTS
 type AnyToolDef = ToolDef<any, any, any>
 
 export function buildTool<D extends AnyToolDef>(def: D): BuiltTool<D> {
+  /**
+   * `buildTool()` 的存在，是为了把所有工具的公共默认行为集中管理。
+   *
+   * 最关键的默认值体现了 fail-closed 思路：
+   * - `isConcurrencySafe` 默认 false：除非工具作者明确声明，否则不假设可并发；
+   * - `isReadOnly` 默认 false：除非明确声明，否则不假设只读；
+   *
+   * 这样一来，工具作者只需要声明“偏离默认”的部分，系统仍能拿到完整稳定的 Tool 对象。
+   */
   // The runtime spread is straightforward; the `as` bridges the gap between
   // the structural-any constraint and the precise BuiltTool<D> return. The
   // type semantics are proven by the 0-error typecheck across all 60+ tools.

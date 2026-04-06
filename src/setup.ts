@@ -53,6 +53,21 @@ import {
   worktreeBranchName,
 } from './utils/worktree.js'
 
+/**
+ * `setup.ts` 是主程序真正“进入业务运行态”之前的环境准备层。
+ *
+ * 这个文件主要负责把启动期必须建立的前置条件一次性做完，典型包括：
+ * - 运行环境是否合法（Node 版本、危险权限模式、沙箱条件）；
+ * - 当前工作目录 / 原始工作目录 / 项目根目录的全局状态初始化；
+ * - hooks、session memory、watcher、analytics sink 的接线；
+ * - worktree / tmux 这种会改变运行上下文的重型准备工作；
+ * - 一些首轮交互前就应该可用的预取与缓存预热；
+ * - 上一次会话统计信息的补记上报。
+ *
+ * 可以把它理解成：
+ * - `main.tsx` 决定“启动哪条路径”
+ * - `setup.ts` 负责“让这条路径具备可运行条件”
+ */
 export async function setup(
   cwd: string,
   permissionMode: PermissionMode,
@@ -66,7 +81,11 @@ export async function setup(
 ): Promise<void> {
   logForDiagnosticsNoPII('info', 'setup_started')
 
-  // Check for Node.js version < 18
+  /**
+   * 第一阶段：运行时最低版本检查。
+   *
+   * 先在最前面做 Node 版本校验，避免后面加载/执行大量初始化后才因为运行时版本不够而失败。
+   */
   const nodeVersion = process.version.match(/^v(\d+)\./)?.[1]
   if (!nodeVersion || parseInt(nodeVersion) < 18) {
     // biome-ignore lint/suspicious/noConsole:: intentional console output
@@ -78,20 +97,27 @@ export async function setup(
     process.exit(1)
   }
 
-  // Set custom session ID if provided
+  /**
+   * 第二阶段：若调用方显式传入 sessionId，则先切换到该会话。
+   *
+   * 后面很多状态与文件路径都依赖当前 sessionId，因此必须在这些逻辑之前完成。
+   */
   if (customSessionId) {
     switchSession(asSessionId(customSessionId))
   }
 
-  // --bare / SIMPLE: skip UDS messaging server and teammate snapshot.
-  // Scripted calls don't receive injected messages and don't use swarm teammates.
-  // Explicit --messaging-socket-path is the escape hatch (per #23222 gate pattern).
+  /**
+   * 第三阶段：按需启动 UDS 消息通道。
+   *
+   * 正常交互模式下，本地 Claude 进程可能需要接收外部注入消息，因此要尽早启动 UDS inbox。
+   * bare 模式默认跳过；但如果显式传入 `messagingSocketPath`，仍然允许强制启用。
+   */
   if (!isBareMode() || messagingSocketPath !== undefined) {
-    // Start UDS messaging server (Mac/Linux only).
-    // Enabled by default for ants — creates a socket in tmpdir if no
-    // --messaging-socket-path is passed. Awaited so the server is bound
-    // and $CLAUDE_CODE_MESSAGING_SOCKET is exported before any hook
-    // (SessionStart in particular) can spawn and snapshot process.env.
+    /**
+     * 这里必须 await，原因是后面的 hook/子进程可能会立即读取
+     * `CLAUDE_CODE_MESSAGING_SOCKET` 并尝试连接；如果 socket 还没 bind 完成，
+     * 就会出现“环境变量存在但服务不可用”的竞态问题。
+     */
     if (feature('UDS_INBOX')) {
       const m = await import('./utils/udsMessaging.js')
       await m.startUdsMessaging(
@@ -101,7 +127,11 @@ export async function setup(
     }
   }
 
-  // Teammate snapshot — SIMPLE-only gate (no escape hatch, swarm not used in bare)
+  /**
+   * 第四阶段：记录 teammate mode 快照。
+   *
+   * 这一步只在启用 agent swarms 的前提下执行，用于后续多 Agent / team 能力识别当前后端模式。
+   */
   if (!isBareMode() && isAgentSwarmsEnabled()) {
     const { captureTeammateModeSnapshot } = await import(
       './utils/swarm/backends/teammateModeSnapshot.js'
@@ -109,11 +139,14 @@ export async function setup(
     captureTeammateModeSnapshot()
   }
 
-  // Terminal backup restoration — interactive only. Print mode doesn't
-  // interact with terminal settings; the next interactive session will
-  // detect and restore any interrupted setup.
+  /**
+   * 第五阶段：终端设置恢复。
+   *
+   * 仅交互模式需要处理，因为 print/headless 模式不会去修改用户终端环境。
+   * 这里的目的是把之前可能“半途失败”的 iTerm2 / Terminal.app 设置恢复到安全状态。
+   */
   if (!getIsNonInteractiveSession()) {
-    // iTerm2 backup check only when swarms enabled
+    // iTerm2 恢复仅在相关集成开启时才有意义。
     if (isAgentSwarmsEnabled()) {
       const restoredIterm2Backup = await checkAndRestoreITerm2Backup()
       if (restoredIterm2Backup.status === 'restored') {
@@ -133,7 +166,7 @@ export async function setup(
       }
     }
 
-    // Check and restore Terminal.app backup if setup was interrupted
+    // Terminal.app 的恢复逻辑与 iTerm2 类似，但单独包在 try/catch 里，避免终端恢复失败拖垮整个 setup。
     try {
       const restoredTerminalBackup = await checkAndRestoreTerminalBackup()
       if (restoredTerminalBackup.status === 'restored') {
@@ -157,32 +190,56 @@ export async function setup(
     }
   }
 
-  // IMPORTANT: setCwd() must be called before any other code that depends on the cwd
+  /**
+   * 第六阶段：建立全局目录基线。
+   *
+   * `setCwd()` 必须尽早执行，因为后续几乎所有依赖本地配置、hooks、git、skills 的逻辑
+   * 都会隐式依赖当前工作目录。
+   */
   setCwd(cwd)
   setOriginalCwd(cwd)
   setProjectRoot(cwd)
 
-  // Local recovery mode: when CLAUDE_CODE_LOCAL_RECOVERY=1 is explicitly set,
-  // trim startup to minimum. Otherwise run full setup for the Ink TUI.
+  /**
+   * 第七阶段：本地恢复模式的极简提前返回。
+   *
+   * 当显式进入 local recovery 时，setup 只保留最小必需动作，
+   * 不再继续为完整 Ink/TUI 做昂贵初始化。
+   */
   if (process.env.CLAUDE_CODE_LOCAL_RECOVERY === '1') {
     process.stderr.write('[local-recovery] setup early return\n')
     profileCheckpoint('setup_local_recovery_early_return')
     return
   }
 
-  // Capture hooks configuration snapshot to avoid hidden hook modifications.
-  // IMPORTANT: Must be called AFTER setCwd() so hooks are loaded from the correct directory
+  /**
+   * 第八阶段：捕获 hooks 配置快照，并启动 FileChanged watcher。
+   *
+   * 目的：
+   * - 后续可以检测“隐藏的 hook 配置变化”；
+   * - watcher 依赖正确目录下的 hooks 配置，因此必须放在 setCwd() 之后。
+   */
   const hooksStart = Date.now()
   captureHooksConfigSnapshot()
   logForDiagnosticsNoPII('info', 'setup_hooks_captured', {
     duration_ms: Date.now() - hooksStart,
   })
 
-  // Initialize FileChanged hook watcher — sync, reads hook config snapshot
+  // FileChanged watcher 是同步初始化的，并直接依赖刚刚捕获的 hooks 快照。
   initializeFileChangedWatcher(cwd)
 
-  // Handle worktree creation if requested
-  // IMPORTANT: this must be called befiore getCommands(), otherwise /eject won't be available.
+  /**
+   * 第九阶段：如果用户请求 `--worktree`，则在这里完成 worktree / tmux 环境切换。
+   *
+   * 这一段是 setup 中最“重”的分支之一：
+   * - 校验当前是否有 git 或替代 hook；
+   * - 解析 slug / PR 编号；
+   * - 创建 worktree；
+   * - 可选创建 tmux session；
+   * - 把 cwd / projectRoot / originalCwd 等状态切换到新 worktree。
+   *
+   * 注：必须先于 `getCommands()` 执行，否则某些与 worktree 强相关的命令装配会丢失上下文。
+   */
   if (worktreeEnabled) {
     // Mirrors bridgeMain.ts: hook-configured sessions can proceed without git
     // so createWorktreeForSession() can delegate to the hook (non-git VCS).
@@ -255,7 +312,7 @@ export async function setup(
 
     logEvent('tengu_worktree_created', { tmux_enabled: tmuxEnabled })
 
-    // Create tmux session for the worktree if enabled
+    // 如果启用了 tmux，则在 worktree 创建成功后继续创建并关联 tmux session。
     if (tmuxEnabled && tmuxSessionName) {
       const tmuxResult = await createTmuxSessionForWorktree(
         tmuxSessionName,
@@ -294,7 +351,12 @@ export async function setup(
     updateHooksConfigSnapshot()
   }
 
-  // Background jobs - only critical registrations that must happen before first query
+  /**
+   * 第十阶段：注册“首轮 query 前必须存在”的后台能力。
+   *
+   * 这里放的是 setup 阶段必须完成或发起的关键后台注册，
+   * 与稍后更偏性能优化性质的 prefetch 是两类不同工作。
+   */
   logForDiagnosticsNoPII('info', 'setup_background_jobs_starting')
   // Bundled skills/plugins are registered in main.tsx before the parallel
   // getCommands() kick — see comment there. Moved out of setup() because
@@ -314,7 +376,12 @@ export async function setup(
   logForDiagnosticsNoPII('info', 'setup_background_jobs_launched')
 
   profileCheckpoint('setup_before_prefetch')
-  // Pre-fetch promises - only items needed before render
+  /**
+   * 第十一阶段：首轮渲染/首轮交互前的预取。
+   *
+   * 目标是提前把第一轮最容易用到的插件、hooks、repo 分类、session file access 等能力热起来。
+   * 但如果处于 bare 或 sync plugin install 等特殊路径，会有选择地跳过，避免无意义竞争和开销。
+   */
   logForDiagnosticsNoPII('info', 'setup_prefetch_starting')
   // When CLAUDE_CODE_SYNC_PLUGIN_INSTALL is set, skip all plugin prefetch.
   // The sync install path in print.ts calls refreshPluginState() after
@@ -380,19 +447,22 @@ export async function setup(
   }
   initSinks() // Attach error log + analytics sinks and drain queued events
 
-  // Session-success-rate denominator. Emit immediately after the analytics
-  // sink is attached — before any parsing, fetching, or I/O that could throw.
-  // inc-3694 (P0 CHANGELOG crash) threw at checkForReleaseNotes below; every
-  // event after this point was dead. This beacon is the earliest reliable
-  // "process started" signal for release health monitoring.
+  /**
+   * 第十二阶段：analytics sink 挂好后，立刻打出 `tengu_started`。
+   *
+   * 这个事件的作用不是业务功能，而是“启动成功分母”：
+   * 如果后面任意一步崩掉，至少监控系统已经知道这次进程确实启动过。
+   */
   logEvent('tengu_started', {})
 
   void prefetchApiKeyFromApiKeyHelperIfSafe(getIsNonInteractiveSession()) // Prefetch safely - only executes if trust already confirmed
   profileCheckpoint('setup_after_prefetch')
 
-  // Pre-fetch data for Logo v2 - await to ensure it's ready before logo renders.
-  // --bare / SIMPLE: skip — release notes are interactive-UI display data,
-  // and getRecentActivity() reads up to 10 session JSONL files.
+  /**
+   * 第十三阶段：Logo / Release Notes 的交互式 UI 预热。
+   *
+   * 这部分明显偏展示体验，因此 bare 模式会跳过。
+   */
   if (!isBareMode()) {
     const { hasReleaseNotes } = await checkForReleaseNotes(
       getGlobalConfig().lastReleaseNotesSeen,
@@ -402,7 +472,14 @@ export async function setup(
     }
   }
 
-  // If permission mode is set to bypass, verify we're in a safe environment
+  /**
+   * 第十四阶段：对 bypass 权限模式做最后的硬性安全校验。
+   *
+   * 即使用户显式要求 `--dangerously-skip-permissions`，这里仍然要确认：
+   * - 不能在 root/sudo 下随便开启；
+   * - 某些场景必须在隔离容器/沙箱且无外网时才允许；
+   * - 这是整个启动路径里最关键的安全兜底之一。
+   */
   if (
     permissionMode === 'bypassPermissions' ||
     allowDangerouslySkipPermissions
@@ -455,7 +532,14 @@ export async function setup(
     return
   }
 
-  // Log tengu_exit event from the last session?
+  /**
+   * 第十五阶段：补记上一轮会话的退出统计。
+   *
+   * 这里读取的是 project config 里持久化的上一轮 cost / duration / fps / token 统计，
+   * 并在新的启动时补打一条 `tengu_exit`。
+   *
+   * 这些值不会被清空，因为恢复会话时仍可能依赖它们。
+   */
   const projectConfig = getCurrentProjectConfig()
   if (
     projectConfig.lastCost !== undefined &&
